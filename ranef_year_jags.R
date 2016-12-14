@@ -18,6 +18,10 @@ model{
   p0 ~ dnorm(0, 0.20)
   lp ~ dnorm(0, 0.20)
   
+  # covariate effect
+  g1 ~ dnorm(0, 0.20)
+  p1 ~ dnorm(0, 0.20)
+  
   # half-cauchy hyperpriors for sd
   # of random effects
   gy_sd ~ dt(0,25,1) T(0,)
@@ -32,8 +36,8 @@ model{
   for(k in 1:nsite){
     z[k,1] ~ dbern(psinit)
     for(t in 2:nyear){
-      logit(psi[k,t]) <- (z[k,t-1] * (p0 + py[t-1])) + 
-        ((1-z[k,t-1]) * (g0 + gy[t-1]))
+      logit(psi[k,t]) <- (z[k,t-1] * (p0 + py[t-1]) + p1 * cov[k]) + 
+        ((1-z[k,t-1]) * (g0 + gy[t-1]) + g1 * cov[k])
       z[k,t] ~ dbern(psi[k,t])
     }
   }
@@ -44,6 +48,7 @@ model{
     for(t in 1:nyear){
       logit(p[j,t]) <- lp + ly[t]
       y[j,t] ~ dbin(z[j,t]*p[j,t], jmat[j,t])
+      y_pred[j,t] ~ dbin(z[j,t] * p[j,t], jmat[j,t])
     }
   }
   

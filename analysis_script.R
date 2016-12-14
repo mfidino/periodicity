@@ -34,9 +34,11 @@ package_load("reshape2")
 
 
 # lets do the coyote
-z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[3,,]
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[1,,]
 
 # get number of sites occupied
+
+
 soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
 
 # get beta a and b from mean and standard deviation of soc
@@ -68,6 +70,7 @@ species_names <- read.table("species_used_in_fa10_sp13_analysis.txt", header = T
 ### j matrix is ordered this way
 site_names <- read.table("sites_used_in_sp10_sp13_analysis.txt", header = TRUE)
 
+covdat <- read.csv("urban_pc.csv", header = TRUE)
 # read in the y array
 
 y_array <- df_2_array(read.table("y_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))
@@ -86,6 +89,8 @@ inits <- function(chain){
       gy = runif(12, -3, 3),
       ly = runif(13, -3, 3),
       lp = runif(1, -3, 3),
+      p1 = runif(1, -3, 3),
+      g1 = runif(1, -3, 3),
       .RNG.name = switch(chain,
                          "1" = "base::Wichmann-Hill",
                          "2" = "base::Marsaglia-Multicarry",
@@ -112,29 +117,165 @@ inits <- function(chain){
 }
 
 params <- c("lp", "ly", "g0", "p0", "gy", "py", "gy_sd",
-            "py_sd", "ly_sd", "psinit", "z")
+            "py_sd", "ly_sd", "psinit")
 
 # get coyote data from the y_array
 data_list <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,]), nyear = ncol(z), 
                   nsite = nrow(z), 
                   spa = prior_for_occ$a, spb = prior_for_occ$b,
                   jmat = as.matrix(j_mat),
-                  pi = 3.14159)
+                  cov = covdat$pc1)#,
+                  #pi = 3.14159)
+
+data_list$jmat[68,4] <- floor(median(data_list$jmat))
 
 # run the jags model.
 
-mod_mcmc <- as.mcmc.list(run.jags( model= "ranef_year_jags.R" , 
+
+mod_mcmc <- run.jags( model= "ranef_year_jags.R" , 
                                    monitor=params , 
                                    data=data_list ,  
                                    inits=inits , 
-                                   n.chains=1 ,
+                                   n.chains=7 ,
                                    adapt=3000,
                                    burnin=3000 , 
-                                   sample=10000 ,
+                                   sample=ceiling(10000/7) ,
                                    thin=5 ,
                                    summarise=FALSE ,
                                    plots=FALSE,
-                                   method = "parallel"))
+                                   method = "parallel")
+k <- 100
+tok <- which(!is.na(data_list$y))
+tok <- tok[-which(tok<101)]
+
+####
+sim_ans <- rep(0,10)
+for(i in 2:10){
+  y <- data_list$y
+tg <- sample(1:length(tok), k, replace = TRUE)
+stored_val <- rep(0, length(tg))
+stored_val <- y[tok[tg]]
+y[tok[tg]] <- NA
+
+new_list <- list( y = as.matrix(y), nyear = ncol(z), nsite = nrow(z),
+                  spa = prior_for_occ$a, spb = prior_for_occ$b,
+                  jmat = as.matrix(j_mat),
+                  cov = covdat$pc1)
+new_list$jmat[68,4] <- floor(median(data_list$jmat))
+  dropped <- run.jags( model= "ranef_year_jags.R" , 
+                        monitor="y" , 
+                        data=new_list ,  
+                        inits=inits , 
+                        n.chains=7 ,
+                        adapt=3000,
+                        burnin=3000 , 
+                        sample=ceiling(10000/7) ,
+                        thin=5 ,
+                        summarise=FALSE ,
+                        plots=FALSE,
+                        method = "parallel")
+  dropped <- as.matrix(as.mcmc.list(dropped), chains = TRUE)[,-1]
+  # get just the ones we predicted
+  preds <- dropped[,tok[tg]]
+  bfs <- (sweep(preds, 2, stored_val)^2)
+  sim_ans[i] <- mean(bfs)
+}
+
+fy <- data_list$y
+fy[,10:13] <- NA
+forecast_list <- list( y = as.matrix(y), nyear = ncol(z), nsite = nrow(z),
+                  spa = prior_for_occ$a, spb = prior_for_occ$b,
+                  jmat = as.matrix(j_mat),
+                  cov = covdat$pc1)
+
+dropped <- run.jags( model= "ranef_year_jags.R", 
+                     monitor="y_pred" , 
+                     data=new_list ,  
+                     inits=inits , 
+                     n.chains=7 ,
+                     adapt=3000,
+                     burnin=3000 , 
+                     sample=ceiling(10000/7) ,
+                     thin=5 ,
+                     summarise=FALSE ,
+                     plots=FALSE,
+                     method = "parallel")
+dm <- as.matrix(as.mcmc.list(dropped), chains = TRUE)[,-1]
+
+m1 <- mase(dm, data_list, type = "season")
+
+# fix this function so we can use it for both types
+# of effects
+mase <- function(fmat = NULL, dl = NULL, type = "ns"){
+  if(type == "ns"){
+  # our y values as a vector
+  my <- as.numeric(dl$y)
+  # our y values as a matrix
+  yy <- dl$y
+  # naive matrix for denominator
+  naive <- matrix(NA, ncol = dl$nyear -1, nrow = dl$nsite)
+  for(i in 1:ncol(naive)){
+    naive[,i] <- yy[,i+1] - yy[,i] # fill matrix
+  }
+  # take absolute value
+  naive <- abs(naive)
+  # calculate naive forecast error
+  nf <- sum(naive, na.rm = TRUE) * (dl$nyear/(dl$nyear-1))
+  # determine which values to na in our pred
+  to_na <- which(is.na(my)==TRUE)
+  # na the y_pred values
+  fmat[,to_na] <- NA
+  # subtract our y values
+  ets <- sweep(dm, 2, my)
+  # take absolute value
+  ets <- abs(ets)
+  # sum error for every sample and divide
+  MASE <- rowSums(ets, na.rm = TRUE) / nf
+  return(MASE)
+  }else{
+      fmat <- fmat[,-c(1:100)]
+      # our y values as a vector
+      my <- as.numeric(dl$y)[-c(1:100)]
+      # our y values as a matrix
+      yy <- dl$y
+      # naive matrix for denominator
+      myc <- (dl$nyear -1 - dl$P)
+      seas <- matrix(NA, ncol = myc, nrow = dl$nsite)
+      for(i in 1:ncol(seas)){
+        seas[,i] <- yy[,i+dl$P+1] - yy[,i + 1] # fill matrix
+      }
+      # take absolute value
+      seas <- abs(seas)
+      # calculate naive forecast error
+      nf <- sum(seas, na.rm = TRUE) * (dl$nyear/(dl$nyear-dl$P))
+      # determine which values to na in our pred
+      to_na <- which(is.na(my)==TRUE)
+      # na the y_pred values
+      fmat[,to_na] <- NA
+      # subtract our y values
+      ets <- sweep(fmat, 2, my)
+      # take absolute value
+      ets <- abs(ets)
+      # sum error for every sample and divide
+      MASE <- rowSums(ets, na.rm = TRUE) / nf
+      
+  }
+}
+j1 <- mm[1,-c(1:100)]
+j2 <- dm[2,-c(1:100)]
+j1[to_na] <- NA
+j2[to_na] <- NA
+jj1 <- abs(j1 - my)
+jj2 <- abs(j2 - my)
+#
+mm <- as.jags(mod_mcmc)
+
+source("drop.k_travis.R")
+test <- drop.k(mod_mcmc, dropvars = 'y[1:100, 1:13]', k = 100, simulations = 2, n.cores = 6,
+               max.time = "5m", silent.jags = FALSE)
+
+
+test <- drop.k()
 
 # do it again with the trig functions
 
@@ -142,12 +283,14 @@ inits <- function(chain){
   gen_list <- function(chain = chain){
     list( 
       z = z,
-      g0 = runif(1, -3, 3),
-      p0 = runif(1, -3, 3),
+      g1 = runif(1, -3, 3),
+      p1 = runif(1, -3, 3),
       py = runif(12, -3, 3),
       gy = runif(12, -3, 3),
       ly = runif(13, -3, 3),
       lp = runif(1, -3, 3),
+      g_mu = runif(1, -3, 3),
+      p_mu = runif(1, -3, 3),
       theta = runif(1, 0.01, 3),
       dprobs = 2,
       .RNG.name = switch(chain,
@@ -191,26 +334,30 @@ data_list <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,]), ny
                   nsite = nrow(z), 
                   spa = prior_for_occ$a, spb = prior_for_occ$b,
                   jmat = as.matrix(j_mat),
-                  pi = 3.14159, C = cs[[1]], S = cs[[2]])
+                  pi = 3.14159, C = cs[[1]], S = cs[[2]],
+                  cov = covdat$pc1)
+data_list$jmat[68,4] <- 26
 
 params <- c("lp", "ly", "p0", "gy", "py", "gy_sd",
             "py_sd", "ly_sd", "psinit", "theta",
-            "dprobs", "dp", "g_mu", "z")
+            "dprobs", "dp", "g_mu", "y_pred")
 j_mat[68,4] <- 5
-mod_pulse2 <- as.mcmc.list(run.jags( model= "pulse_year_jags_trig.R" , 
-                                   monitor=params , 
+mod_pulse2 <- run.jags( model= "pulse_year_jags_trig.R" , 
+                                   monitor= params , 
                                    data=data_list ,  
                                    inits=inits , 
-                                   n.chains=1 ,
+                                   n.chains=7 ,
                                    adapt=3000,
                                    burnin=3000 , 
-                                   sample=4000 ,
+                                   sample=ceiling(10000/7) ,
                                    thin=5 ,
                                    summarise=FALSE ,
                                    plots=FALSE,
-                                   method = "parallel"))
-mm <- as.matrix(mod_pulse2, chains = TRUE)
+                                   method = "parallel")
+mm <- as.matrix(as.mcmc.list(mod_pulse2), chains = TRUE)[,-1]
+mm <- mm[,grep("y_pred", colnames(mm))]
 
+tt <- mase(mm, data_list, type = "ns")
 
 
 theta <- mm[,45]

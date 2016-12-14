@@ -6,7 +6,7 @@ model{
   # add a random year effect
   for(i in 1:(nyear - 1)){
     gy[i] ~ dnorm(g_mu, gy_tau)
-    py[i] ~ dnorm(0, py_tau)
+    py[i] ~ dnorm(p_mu, py_tau)
     
   }
   for(yr in 1:nyear){
@@ -14,9 +14,12 @@ model{
   }
   
   # intercepts
-  g_mu ~ dnorm(0, 0.20)
-  p0 ~ dnorm(0, 0.20)
-  lp ~ dnorm(0, 0.20)
+  g_mu ~ dnorm(0, 0.30)
+  p_mu ~ dnorm(0, 0.30)
+  lp ~ dnorm(0, 0.30)
+  p1 ~ dnorm(0, 0.30)
+  g1 ~ dnorm(0, 0.30)
+
   
   # fourier stuff
   theta ~ dunif(0.01, 10)
@@ -42,7 +45,9 @@ model{
     z[k,1] ~ dbern(psinit)
     for(t in 2:nyear){
       logit(psi[k,t]) <- (z[k,t-1] * (py[t-1])) +
+      (z[k,t-1] * (p1 * cov[k])) + 
         ((1-z[k,t-1]) * gy[t-1])+
+        ((1-z[k,t-1]) * g1 * cov[k])+
         ((1 - z[k,t-1]) * (theta * cos((pi*1*dp)/2) * C[t-1,1] + theta * sin((pi*1*dp)/2) * S[t-1,1]))+
         ((1 - z[k,t-1]) * (theta * cos((pi*2*dp)/2) * C[t-1,2] + theta * sin((pi*2*dp)/2) * S[t-1,2]))+
         ((1 - z[k,t-1]) * (theta * cos((pi*3*dp)/2) * C[t-1,3] + theta * sin((pi*3*dp)/2) * S[t-1,3]))
@@ -57,6 +62,7 @@ model{
     for(t in 1:nyear){
       logit(p[j,t]) <- lp + ly[t]
       y[j,t] ~ dbin(z[j,t]*p[j,t], jmat[j,t])
+      y_pred[j,t] ~ dbin(z[j,t]*p[j,t], jmat[j,t])
     }
   }
   
