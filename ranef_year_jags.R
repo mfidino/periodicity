@@ -14,13 +14,14 @@ model{
   }
   
   # intercepts
-  g0 ~ dnorm(0, 0.20)
-  p0 ~ dnorm(0, 0.20)
-  lp ~ dnorm(0, 0.20)
+  g0 ~ dnorm(0, 0.30)
+  p0 ~ dnorm(0, 0.30)
+  lp ~ dnorm(0, 0.30)
   
   # covariate effect
-  g1 ~ dnorm(0, 0.20)
-  p1 ~ dnorm(0, 0.20)
+  g1 ~ dnorm(0, 0.30)
+  p1 ~ dnorm(0, 0.30)
+  l1 ~ dnorm(0, 0.30)
   
   # half-cauchy hyperpriors for sd
   # of random effects
@@ -35,10 +36,12 @@ model{
   # latent state
   for(k in 1:nsite){
     z[k,1] ~ dbern(psinit)
+    z_pred[k,1] ~ dbern(psinit)
     for(t in 2:nyear){
       logit(psi[k,t]) <- (z[k,t-1] * (p0 + py[t-1]) + p1 * cov[k]) + 
         ((1-z[k,t-1]) * (g0 + gy[t-1]) + g1 * cov[k])
       z[k,t] ~ dbern(psi[k,t])
+      z_pred[k,t] ~ dbern(psi[k,t])
     }
   }
   
@@ -46,7 +49,7 @@ model{
   
   for(j in 1:nsite){
     for(t in 1:nyear){
-      logit(p[j,t]) <- lp + ly[t]
+      logit(p[j,t]) <- lp + ly[t] + l1 * cov[j]
       y[j,t] ~ dbin(z[j,t]*p[j,t], jmat[j,t])
       y_pred[j,t] ~ dbin(z[j,t] * p[j,t], jmat[j,t])
     }
