@@ -37,11 +37,47 @@ inits_ranef <- function(chain){
   gen_list <- function(chain = chain){
     list( 
       z = z,
-      g0 = runif(1, -3, 3),
-      p0 = runif(1, -3, 3),
+      g_mu = runif(1, -3, 3),
+      p_mu = runif(1, -3, 3),
       py = runif(12, -3, 3),
       gy = runif(12, -3, 3),
       ly = runif(13, -3, 3),
+      lp = runif(1, -3, 3),
+      ls = runif(100, -3, 3),
+      p1 = runif(1, -3, 3),
+      g1 = runif(1, -3, 3),
+      .RNG.name = switch(chain,
+                         "1" = "base::Wichmann-Hill",
+                         "2" = "base::Marsaglia-Multicarry",
+                         "3" = "base::Super-Duper",
+                         "4" = "base::Mersenne-Twister",
+                         "5" = "base::Wichmann-Hill",
+                         "6" = "base::Marsaglia-Multicarry",
+                         "7" = "base::Super-Duper",
+                         "8" = "base::Mersenne-Twister"),
+      .RNG.seed = sample(1:1e+06, 1)
+    )
+  }
+  return(switch(chain,           
+                "1" = gen_list(chain),
+                "2" = gen_list(chain),
+                "3" = gen_list(chain),
+                "4" = gen_list(chain),
+                "5" = gen_list(chain),
+                "6" = gen_list(chain),
+                "7" = gen_list(chain),
+                "8" = gen_list(chain)
+  )
+  )
+}
+inits_homog <- function(chain){
+  gen_list <- function(chain = chain){
+    list( 
+      z = z,
+      g_mu = runif(1, -3, 3),
+      py = runif(12, -3, 3),
+      ly = runif(13, -3, 3),
+      ls = runif(100,-3,3),
       lp = runif(1, -3, 3),
       p1 = runif(1, -3, 3),
       g1 = runif(1, -3, 3),
@@ -73,7 +109,7 @@ inits_ranef <- function(chain){
 
 dl <- 
 
-mase <- function(fmat = NULL, dl = NULL, type = "ns", fcast = FALSE){
+mase <- function(fmat = NULL, dl = NULL, type = "naive", fcast = FALSE){
   # our y values as a vector
   my <- as.numeric(dl$y)
   # our y values as a matrix
@@ -101,7 +137,7 @@ mase <- function(fmat = NULL, dl = NULL, type = "ns", fcast = FALSE){
     if(fcast){
       nf <- sum(naive[,9:12], na.rm = TRUE) * (dl$nyear/(dl$nyear-1))
     }else{
-      sum(naive[,9:12], na.rm = TRUE) * (dl$nyear/(dl$nyear-1))
+      nf <- sum(naive, na.rm = TRUE) * (dl$nyear/(dl$nyear-1))
     }
     
     # determine which values to na in our pred
@@ -167,11 +203,129 @@ inits_pulse <- function(chain){
       py = runif(12, -3, 3),
       gy = runif(12, -3, 3),
       ly = runif(13, -3, 3),
+      ls = runif(100,-3,3),
       lp = runif(1, -3, 3),
       g_mu = runif(1, -3, 3),
       p_mu = runif(1, -3, 3),
       theta = runif(1, 0.01, 3),
       dprobs = 2,
+      .RNG.name = switch(chain,
+                         "1" = "base::Wichmann-Hill",
+                         "2" = "base::Marsaglia-Multicarry",
+                         "3" = "base::Super-Duper",
+                         "4" = "base::Mersenne-Twister",
+                         "5" = "base::Wichmann-Hill",
+                         "6" = "base::Marsaglia-Multicarry",
+                         "7" = "base::Super-Duper",
+                         "8" = "base::Mersenne-Twister"),
+      .RNG.seed = sample(1:1e+06, 1)
+    )
+  }
+  return(switch(chain,           
+                "1" = gen_list(chain),
+                "2" = gen_list(chain),
+                "3" = gen_list(chain),
+                "4" = gen_list(chain),
+                "5" = gen_list(chain),
+                "6" = gen_list(chain),
+                "7" = gen_list(chain),
+                "8" = gen_list(chain)
+  )
+  )
+}
+
+inits_boom <- function(chain){
+  gen_list <- function(chain = chain){
+    list( 
+      z = z,
+      g1 = runif(1, -3, 3),
+      p1 = runif(1, -3, 3),
+      py = runif(12, -3, 3),
+      gy = runif(12, -3, 3),
+      ly = runif(13, -3, 3),
+      ls = runif(100,-3,3),
+      lp = runif(1, -3, 3),
+      g_mu = runif(1, -3, 3),
+      p_mu = runif(1, -3, 3),
+      a1_gam = runif(1, 0.01, 3),
+      dprobs_gam = 2,
+      .RNG.name = switch(chain,
+                         "1" = "base::Wichmann-Hill",
+                         "2" = "base::Marsaglia-Multicarry",
+                         "3" = "base::Super-Duper",
+                         "4" = "base::Mersenne-Twister",
+                         "5" = "base::Wichmann-Hill",
+                         "6" = "base::Marsaglia-Multicarry",
+                         "7" = "base::Super-Duper",
+                         "8" = "base::Mersenne-Twister"),
+      .RNG.seed = sample(1:1e+06, 1)
+    )
+  }
+  return(switch(chain,           
+                "1" = gen_list(chain),
+                "2" = gen_list(chain),
+                "3" = gen_list(chain),
+                "4" = gen_list(chain),
+                "5" = gen_list(chain),
+                "6" = gen_list(chain),
+                "7" = gen_list(chain),
+                "8" = gen_list(chain)
+  )
+  )
+}
+
+inits_only_pulse <- function(chain){
+  gen_list <- function(chain = chain){
+    list( 
+      z = z,
+      g1 = runif(1, -3, 3),
+      p1 = runif(1, -3, 3),
+      py = runif(12, -3, 3),
+      ly = runif(13, -3, 3),
+      lp = runif(1, -3, 3),
+      ls = runif(100,-3,3),
+      g_mu = runif(1, -3, 3),
+      p_mu = runif(1, -3, 3),
+      theta = runif(1, 0.01, 3),
+      dprobs = 2,
+      .RNG.name = switch(chain,
+                         "1" = "base::Wichmann-Hill",
+                         "2" = "base::Marsaglia-Multicarry",
+                         "3" = "base::Super-Duper",
+                         "4" = "base::Mersenne-Twister",
+                         "5" = "base::Wichmann-Hill",
+                         "6" = "base::Marsaglia-Multicarry",
+                         "7" = "base::Super-Duper",
+                         "8" = "base::Mersenne-Twister"),
+      .RNG.seed = sample(1:1e+06, 1)
+    )
+  }
+  return(switch(chain,           
+                "1" = gen_list(chain),
+                "2" = gen_list(chain),
+                "3" = gen_list(chain),
+                "4" = gen_list(chain),
+                "5" = gen_list(chain),
+                "6" = gen_list(chain),
+                "7" = gen_list(chain),
+                "8" = gen_list(chain)
+  )
+  )
+}
+inits_only_boom <- function(chain){
+  gen_list <- function(chain = chain){
+    list( 
+      z = z,
+      g1 = runif(1, -3, 3),
+      p1 = runif(1, -3, 3),
+      py = runif(12, -3, 3),
+      ly = runif(13, -3, 3),
+      lp = runif(1, -3, 3),
+      ls = runif(100,-3,3),
+      g_mu = runif(1, -3, 3),
+      p_mu = runif(1, -3, 3),
+      a1_gam = runif(1, 0.01, 3),
+      dprobs_gam = 2,
       .RNG.name = switch(chain,
                          "1" = "base::Wichmann-Hill",
                          "2" = "base::Marsaglia-Multicarry",
@@ -207,68 +361,10 @@ make_c_s_mat <- function( ti = NULL, n = NULL){
   return(list(C=C, S=S))
 }
 
-fmat <- rany
-fmat <- pulsey
-a1 <- apply(rany, 2, median)
-a2 <- apply(pulsey, 2, median)
-plot(a1 - a2)
-dl <- data_list
-  mase2 <- function(fmat = NULL, dl = NULL, type = "ns"){
-    if(type == "ns"){
-      # our y values as a vector
-      my <- as.numeric(dl$y)
-      # our y values as a matrix
-      yy <- dl$y
-      # naive matrix for denominator
-      naive <- matrix(NA, ncol = dl$nyear -1, nrow = dl$nsite)
-      for(i in 1:ncol(naive)){
-        naive[,i] <- yy[,i+1] - yy[,i] # fill matrix
-      }
-      # take absolute value
-      naive <- abs(naive)
-      # calculate naive forecast error
-      nf <- sum(naive, na.rm = TRUE) * (dl$nyear/(dl$nyear-1))
-      # determine which values to na in our pred
-      to_na <- which(is.na(my)==TRUE)
-      # na the y_pred values
-      fmat[,to_na] <- NA
-      # subtract our y values
-      ets <- sweep(fmat, 2, my)
-      # take absolute value
-      ets <- abs(ets)
-      # sum error for every sample and divide
-      MASE <- rowSums(ets, na.rm = TRUE) / nf
-      return(MASE)
-    }else{
-      fmat <- fmat[,-c(1:100)]
-      # our y values as a vector
-      my <- as.numeric(dl$y)[-c(1:100)]
-      # our y values as a matrix
-      yy <- dl$y
-      # naive matrix for denominator
-      myc <- (dl$nyear -1 - dl$P)
-      seas <- matrix(NA, ncol = myc, nrow = dl$nsite)
-      for(i in 1:ncol(seas)){
-        seas[,i] <- yy[,i+dl$P+1] - yy[,i + 1] # fill matrix
-      }
-      # take absolute value
-      seas <- abs(seas)
-      # calculate naive forecast error
-      nf <- sum(seas, na.rm = TRUE) * (dl$nyear/(dl$nyear-dl$P))
-      # determine which values to na in our pred
-      to_na <- which(is.na(my)==TRUE)
-      # na the y_pred values
-      fmat[,to_na] <- NA
-      # subtract our y values
-      ets <- sweep(fmat, 2, my)
-      # take absolute value
-      ets <- abs(ets)
-      # sum error for every sample and divide
-      MASE <- rowSums(ets, na.rm = TRUE) / nf
-      return(MASE)
-    }
-  }
-  
+
+  post <- rr[,901:1300]
+  yobs <- data_list$y[,10:13]
+
   pploss <- function(post = NULL, yobs = NULL){
     yobs <- as.numeric(yobs)
     a1 <- abs(sweep(post, 2, yobs))
@@ -279,4 +375,42 @@ dl <- data_list
     
     dsel <- sum(am) + sum(a2)
     return(dsel)
+  }
+  
+  
+  make_c_s <- function( ti = NULL, p = NULL){
+    
+    C <- cos((2 * pi * ti)/p)
+    S <- cos((2 * pi * ti)/p)
+    
+    return(list(C=C, S=S))
+  }
+
+  
+  fit_models <- function(models = NULL, dl = NULL,
+                         inl = NULL, to_monitor = NULL, species = NULL){
+    
+    loss_score <- rep(0, length(models))
+    for(i in 1:length(models)){
+      
+      mout <- run.jags( model= models[i] , 
+                        monitor= to_monitor[[i]] , 
+                        data=dl ,  
+                        inits=inl[[i]] , 
+                        n.chains=detectCores()-1 ,
+                        adapt=3000,
+                        burnin=3000 , 
+                        sample=ceiling(20000/7) ,
+                        thin=5 ,
+                        summarise=FALSE ,
+                        plots=FALSE,
+                        method = "parallel")
+      mmat <- as.matrix(as.mcmc.list(mout), chains = TRUE)
+      ymat <- mmat[,grep("y_pred", colnames(mmat))]
+      loss_score[i] <- pploss(ymat, dl$y)
+      mnm <- strsplit(models[i], "\\.")[[1]][1]
+      write.table(mmat, paste0("./model_outputs/",species,"_", mnm,".txt" ), row.names = FALSE)
+    }
+    return(data.frame(loss_score, species = rep(species, length(models)),
+                      model = models))
   }

@@ -44,7 +44,7 @@ covdat <- read.csv("urban_pc.csv", header = TRUE)
 y_array <- df_2_array(read.table("y_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))
 
 j_mat <- read.table("j_matrix_sp10_sp13.txt", header = TRUE, sep = "\t")
-j_mat[68,4] <- 26
+j_mat[68,3:4] <- 26
 
 
 
@@ -52,58 +52,10 @@ j_mat[68,4] <- 26
 params <- c("lp", "ly", "g0", "p0", "gy", "py", "gy_sd",
             "py_sd", "ly_sd", "psinit")
 
-# get coyote data from the y_array
-data_list <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,]), nyear = ncol(z), 
-                  nsite = nrow(z), 
-                  spa = prior_for_occ$a, spb = prior_for_occ$b,
-                  jmat = as.matrix(j_mat),
-                  cov = covdat$pc1, P = 4)#,
-                  #pi = 3.14159)
+# coyote analysis
+cs <- make_c_s_mat(1:12, 4)
 
-# run the jags model.
-
-
-mod_mcmc <- run.jags( model= "ranef_year_jags.R" , 
-                                   monitor= c("y_pred", "l1") , 
-                                   data=data_list ,  
-                                   inits=inits_ranef , 
-                                   n.chains=detectCores()-1 ,
-                                   adapt=3000,
-                                   burnin=3000 , 
-                                   sample=ceiling(20000/7) ,
-                                   thin=5 ,
-                                   summarise=FALSE ,
-                                   plots=FALSE,
-                                   method = "parallel")
-
-
-dm <- as.matrix(as.mcmc.list(mod_mcmc), chains = TRUE)[,-1]
-
-rany <- dm[,grep("y_pred", colnames(dm))]
-post <- rany
-
-post <- mm
-
-
-plosran <- pploss(rany, data_list$y)
-ranz <- dm[,grep("z_pred", colnames(dm))]
-rm(dm)
-
-ry1 <- mase(rany, data_list, type = "naive")
-ry2 <- mase(rany, data_list, type = "season")
-rz1 <- mase(ranz, data_list, type = "naive")
-rz2 <- mase(ranz, data_list, type = "season")
-# fix this function so we can use it for both types
-# of effects
-
-
-# do it again with the trig functions
-
-
-
-cs <- make_c_s_mat(1:12, 3)
-
-data_list <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,]), nyear = ncol(z), 
+data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,]), nyear = ncol(z), 
                   nsite = nrow(z), 
                   spa = prior_for_occ$a, spb = prior_for_occ$b,
                   jmat = as.matrix(j_mat),
@@ -111,52 +63,149 @@ data_list <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,]), ny
                   cov = covdat$pc1, P = 4)
 
 
-params <- c("lp", "ly", "p0", "gy", "py", "gy_sd",
-            "py_sd", "ly_sd", "psinit", "theta",
-            "dprobs", "dp", "g_mu", "y_pred")
+models <- c("ranef_year_jags.R", 
+            "pulse_year_jags_trig.R",
+            "only_pulse_year_jags_trig.R",
+            "homog_time.R")
 
-mod_pulse <- run.jags( model= "pulse_year_jags_trig.R" , 
-                                   monitor= "y_pred" , 
-                                   data=data_list ,  
-                                   inits=inits_pulse , 
-                                   n.chains=detectCores()-1 ,
-                                   adapt=3000,
-                                   burnin=3000 , 
-                                   sample=ceiling(20000/7) ,
-                                   thin=5 ,
-                                   summarise=FALSE ,
-                                   plots=FALSE,
-                                   method = "parallel")
-mm <- as.matrix(as.mcmc.list(mod_pulse), chains = TRUE)[,-1]
+to_mon <- list(c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
+                     "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
+                     "ls_sd", "y_pred", "z"),
+                   c("psinit", "ly", "ls", "g_mu", "p_mu",
+                     "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
+                     "ls_sd", "y_pred", "theta", "dp", "z"),
+                   c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
+                     "lp", "g1", "p1", "l1", "ly_sd",
+                     "ls_sd", "y_pred", "theta", "dp", "z"),
+                   c("psinit", "py", "ly", "ls", "g_mu", "p_mu",
+                     "lp", "g1", "p1", "l1", "py_sd", "ly_sd",
+                     "ls_sd", "y_pred","z"))
+species <- "coyote"
+inl <- list(inits_ranef, inits_pulse, inits_only_pulse, inits_homog)
 
-plospulse <- pploss(mm, data_list$y)
-plosran <- pploss(rany, data_list$y)
-a <- apply(mm, 2, median)
-b <- apply(rany, 2, median)
-post <- mm
-post <- rany
-
-aa <- apply(rany - mm, 2, median)
-di <- rany-mm
-yobs <- data_list$y
-pploss <- function(post = NULL, yobs = NULL){
-  yobs <- as.numeric(yobs)
-  a1 <- sweep(post, 2, yobs)^2
-  togo <- which(is.na(yobs))
-  am <- apply(a1[,-togo], 2, median)
-  
-  a2 <- apply(post[,-togo], 2, var)
-  
-  dsel <- sum(am) + sum(a2)
-  return(dsel)
-}
+# the model outputs will be saved
+coyote_scores <- fit_models(models, data_list_trig, inl, to_mon, "coyote")
 
 
-pulsey <- mm[,grep("y_pred", colnames(mm))]
-pulsez <- mm[,grep("z_pred", colnames(mm))]
-mm <- mm[,-grep("pred", colnames(mm))]
-py1 <- mase(pulsey, data_list, type = "naive")
-py2 <- mase(pulsey, data_list, type = "season")
+### red fox
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[5,,]
+
+# get number of sites occupied
+
+
+soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
+
+# get beta a and b from mean and standard deviation of soc
+
+prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
+
+data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Redfox"),,]), nyear = ncol(z), 
+                       nsite = nrow(z), 
+                       spa = prior_for_occ$a, spb = prior_for_occ$b,
+                       jmat = as.matrix(j_mat),
+                       pi = 3.14159, C = cs[[1]], S = cs[[2]],
+                       cov = covdat$pc1, P = 4)
+
+# the model outputs will be saved
+fox_scores <- fit_models(models, data_list_trig, inl, to_mon, "redfox")
+
+# now striped skunk
+
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[6,,]
+
+# get number of sites occupied
+
+
+soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
+
+# get beta a and b from mean and standard deviation of soc
+
+prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
+
+data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Skunk"),,]), nyear = ncol(z), 
+                       nsite = nrow(z), 
+                       spa = prior_for_occ$a, spb = prior_for_occ$b,
+                       jmat = as.matrix(j_mat),
+                       pi = 3.14159, C = cs[[1]], S = cs[[2]],
+                       cov = covdat$pc1, P = 4)
+
+# the model outputs will be saved
+skunk_scores <- fit_models(models, data_list_trig, inl, to_mon, "skunk")
+
+#######################################################
+###### Opossum
+#######################################################
+
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[3,,]
+
+# get number of sites occupied
+
+
+soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
+
+# get beta a and b from mean and standard deviation of soc
+
+prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
+
+cs <- make_c_s(1:12, 2)
+
+data_list_boom <- list(y = as.matrix(y_array[which(species_names$x=="Opossum"),,]), nyear = ncol(z), 
+                       nsite = nrow(z), 
+                       spa = prior_for_occ$a, spb = prior_for_occ$b,
+                       jmat = as.matrix(j_mat),
+                       pi = 3.14159, C = cs[[1]], S = cs[[2]],
+                       cov = covdat$pc1, P = 2)
+
+
+models <- c("ranef_year_jags.R", 
+            "boom_bust_jags_trig.R",
+            "only_boom_bust_jags_trig.R",
+            "homog_time.R")
+
+to_mon <- list(c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
+                 "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
+                 "ls_sd", "y_pred", "z"),
+               c("psinit", "ly", "ls", "g_mu", "p_mu",
+                 "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
+                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z"),
+               c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
+                 "lp", "g1", "p1", "l1", "ly_sd",
+                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z"),
+               c("psinit", "py", "ly", "ls", "g_mu", "p_mu",
+                 "lp", "g1", "p1", "l1", "py_sd", "ly_sd",
+                 "ls_sd", "y_pred","z"))
+species <- "opossum"
+inl <- list(inits_ranef, inits_boom, inits_only_boom, inits_homog)
+
+# the model outputs will be saved
+opossum_scores <- fit_models(models, data_list_boom, inl, to_mon, "opossum")
+
+###############################
+#raccoon
+##################################
+
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[4,,]
+prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
+
+
+data_list_boom <- list(y = as.matrix(y_array[which(species_names$x=="Raccoon"),,]), nyear = ncol(z), 
+                       nsite = nrow(z), 
+                       spa = prior_for_occ$a, spb = prior_for_occ$b,
+                       jmat = as.matrix(j_mat),
+                       pi = 3.14159, C = cs[[1]], S = cs[[2]],
+                       cov = covdat$pc1, P = 2)
+
+raccoon_scores <- fit_models(models, data_list_boom, inl, to_mon, "raccoon")
+
+all_scores <- rbind(coyote_scores, fox_scores, skunk_scores, opossum_scores,raccoon_scores)
+
+# swtich things around to do the opossum and raccoon
+
+py1 <- mase(puly, data_list, type = "naive")
+py2 <- mase(puly, data_list, type = "season")
+
+all_ans <- cbind(ry1, py1, ry2, py2)
+apply(all_ans, 2, quantile)
 pz1 <- mase(pulsez, data_list, type = "naive")
 pz2 <- mase(pulsez, data_list, type = "season")
 theta <- mm[,45]
@@ -235,28 +284,8 @@ data_list <- list(y = as.matrix(y_array[which(species_names$x=="Opossum"),,]), n
                   jmat = as.matrix(j_mat),
                   pi = 3.14159)
 
-# run the jags model.
 
-mod_mcmc <- as.mcmc.list(run.jags( model= "ranef_year_jags.R" , 
-                                   monitor=params , 
-                                   data=data_list ,  
-                                   inits=inits , 
-                                   n.chains=1 ,
-                                   adapt=3000,
-                                   burnin=3000 , 
-                                   sample=10000 ,
-                                   thin=5 ,
-                                   summarise=FALSE ,
-                                   plots=FALSE,
-                                   method = "parallel"))
 
-make_c_s <- function( ti = NULL, p = NULL){
-
-  C <- cos((2 * pi * ti)/p)
-  S <- cos((2 * pi * ti)/p)
-
-  return(list(C=C, S=S))
-}
 
 cs <- make_c_s(1:12, p = 2)
 
