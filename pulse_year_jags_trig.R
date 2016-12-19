@@ -73,7 +73,7 @@ model{
       logit(p[j,t]) <- lp + ly[t] + l1 * cov[j] + ls[j]
       y[j,t] ~ dbin(z[j,t]*p[j,t], jmat[j,t])
       y_pred[j,t] ~ dbin(z[j,t]*p[j,t], jmat[j,t])
-      #pz[j,t] <- z[j,t]*p[j,t]
+      pz[j,t] <- z[j,t]*p[j,t]
     }
   }
   

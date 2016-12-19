@@ -70,22 +70,28 @@ models <- c("ranef_year_jags.R",
 
 to_mon <- list(c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
                      "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
-                     "ls_sd", "y_pred", "z"),
+                     "ls_sd", "y_pred", "z", "p"),
                    c("psinit", "ly", "ls", "g_mu", "p_mu",
                      "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
-                     "ls_sd", "y_pred", "theta", "dp", "z"),
+                     "ls_sd", "y_pred", "theta", "dp", "z", "p"),
                    c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
                      "lp", "g1", "p1", "l1", "ly_sd",
-                     "ls_sd", "y_pred", "theta", "dp", "z"),
+                     "ls_sd", "y_pred", "theta", "dp", "z","p" ),
                    c("psinit", "py", "ly", "ls", "g_mu", "p_mu",
                      "lp", "g1", "p1", "l1", "py_sd", "ly_sd",
-                     "ls_sd", "y_pred","z"))
+                     "ls_sd", "y_pred","z","p"))
 species <- "coyote"
-inl <- list(inits_ranef, inits_pulse, inits_only_pulse, inits_homog)
+inl <- list(inits_ranef, inits_pulse, 
+            inits_only_pulse, inits_homog)
 
 # the model outputs will be saved
 coyote_scores <- fit_models(models, data_list_trig, inl, to_mon, "coyote")
 
+coyote_scores <- data.frame(loss_scores = c(1346.364, 1334.906, 1338.537, 1345.094),
+                            species = "coyote",
+                            model = c("ranef_year_jags", "pulse_year_jags_trig",
+                                      "only_pulse_year_jags_trig", "homog_time"))
+write.table(coyote_scores, "./model_outputs/coyote_scores.txt", row.names = FALSE, sep = "\t")
 
 ### red fox
 z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[5,,]
@@ -108,7 +114,7 @@ data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Redfox"),,]
 
 # the model outputs will be saved
 fox_scores <- fit_models(models, data_list_trig, inl, to_mon, "redfox")
-
+write.table(fox_scores, "./model_outputs/fox_scores.txt", row.names = FALSE, sep = "\t")
 # now striped skunk
 
 z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[6,,]
@@ -131,7 +137,7 @@ data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Skunk"),,])
 
 # the model outputs will be saved
 skunk_scores <- fit_models(models, data_list_trig, inl, to_mon, "skunk")
-
+write.table(skunk_scores, "./model_outputs/skunk_scores.txt", row.names = FALSE, sep = "\t")
 #######################################################
 ###### Opossum
 #######################################################
@@ -164,22 +170,22 @@ models <- c("ranef_year_jags.R",
 
 to_mon <- list(c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
-                 "ls_sd", "y_pred", "z"),
+                 "ls_sd", "y_pred", "z", "p"),
                c("psinit", "ly", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
-                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z"),
+                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z", "p"),
                c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "ly_sd",
-                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z"),
+                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z", "p"),
                c("psinit", "py", "ly", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "py_sd", "ly_sd",
-                 "ls_sd", "y_pred","z"))
+                 "ls_sd", "y_pred","z", "p"))
 species <- "opossum"
 inl <- list(inits_ranef, inits_boom, inits_only_boom, inits_homog)
 
 # the model outputs will be saved
 opossum_scores <- fit_models(models, data_list_boom, inl, to_mon, "opossum")
-
+write.table(opossum_scores, "./model_outputs/opossum_scores.txt", row.names = FALSE, sep = "\t")
 ###############################
 #raccoon
 ##################################
@@ -196,9 +202,9 @@ data_list_boom <- list(y = as.matrix(y_array[which(species_names$x=="Raccoon"),,
                        cov = covdat$pc1, P = 2)
 
 raccoon_scores <- fit_models(models, data_list_boom, inl, to_mon, "raccoon")
-
+write.table(raccoon_scores, "./model_outputs/raccoon_scores.txt", row.names = FALSE, sep = "\t")
 all_scores <- rbind(coyote_scores, fox_scores, skunk_scores, opossum_scores,raccoon_scores)
-
+write.table(all_scores, "./model_outputs/all_scores.txt", row.names = FALSE, sep = "\t")
 # swtich things around to do the opossum and raccoon
 
 py1 <- mase(puly, data_list, type = "naive")

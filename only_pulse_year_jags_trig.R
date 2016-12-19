@@ -8,7 +8,7 @@ model{
   #  gy[i] ~ dnorm(g_mu, gy_tau)
      py[i] ~ dnorm(p_mu, py_tau)
   #  
-  #}
+  }
   for(yr in 1:nyear){
     ly[yr] ~ dnorm(0, ly_tau)
   }

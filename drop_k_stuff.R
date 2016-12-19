@@ -13,13 +13,13 @@ forecast_list <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,])
 forecast_list$y[,10:13] <- NA
 
 ran_cast <- run.jags( model= "ranef_year_jags.R" , 
-                      monitor= c("z" , "y") , 
+                      monitor= c("y") , 
                       data=forecast_list ,  
                       inits=inits_ranef , 
                       n.chains=detectCores()-1 ,
                       adapt=3000,
                       burnin=3000 , 
-                      sample=ceiling(10000/7) ,
+                      sample=ceiling(20000/7) ,
                       thin=5 ,
                       summarise=FALSE ,
                       plots=FALSE,
@@ -27,7 +27,7 @@ ran_cast <- run.jags( model= "ranef_year_jags.R" ,
 
 rr <- as.matrix(as.mcmc.list(ran_cast), chains = TRUE)[,-1]
 
-
+ran_cast_loss <- pploss(rr[,901:1300], data_list$y[,10:13])
 rany <- rr[,grep("y", colnames(rr))]
 ranz <- rr[,grep("z", colnames(rr))]
 rm(rr)
@@ -39,13 +39,13 @@ rzf2 <- mase(ranz, data_list, type = "season", TRUE)
 
 
 mod_pulse_cast <- run.jags( model= "pulse_year_jags_trig.R" , 
-                       monitor= c("y","Z") , 
+                       monitor= c("y") , 
                        data=forecast_list ,  
                        inits=inits_pulse , 
                        n.chains=detectCores()-1 ,
                        adapt=3000,
                        burnin=3000 , 
-                       sample=ceiling(10000/7) ,
+                       sample=ceiling(20000/7) ,
                        thin=5 ,
                        summarise=FALSE ,
                        plots=FALSE,
@@ -53,7 +53,9 @@ mod_pulse_cast <- run.jags( model= "pulse_year_jags_trig.R" ,
 
 pp <- as.matrix(as.mcmc.list(mod_pulse_cast), chains = TRUE)[,-1]
 
-
+pulse_cast_loss <- pploss(pp[,901:1300], data_list$y[,10:13])
+a <- apply(rr[,901:1300], 2, median)
+b <- apply(pp[,901:1300], 2, median)
 puly <- pp[,grep("y", colnames(pp))]
 pulz <- pp[,grep("z", colnames(pp))]
 pyf1 <- mase(puly, data_list, type = "naive", TRUE)

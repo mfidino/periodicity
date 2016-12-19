@@ -362,9 +362,8 @@ make_c_s_mat <- function( ti = NULL, n = NULL){
 }
 
 
-  post <- rr[,901:1300]
-  yobs <- data_list$y[,10:13]
 
+coyote_scores <- rbind(coyote_scores, c(c1, "coyote", "ranef_year.R"))
   pploss <- function(post = NULL, yobs = NULL){
     yobs <- as.numeric(yobs)
     a1 <- abs(sweep(post, 2, yobs))
@@ -406,8 +405,16 @@ make_c_s_mat <- function( ti = NULL, n = NULL){
                         plots=FALSE,
                         method = "parallel")
       mmat <- as.matrix(as.mcmc.list(mout), chains = TRUE)
-      ymat <- mmat[,grep("y_pred", colnames(mmat))]
-      loss_score[i] <- pploss(ymat, dl$y)
+      tz <- as.matrix(mmat[,grep("z\\[", colnames(mmat))])
+      tp <- as.matrix(mmat[,grep("p\\[", colnames(mmat))])
+      jnum <- as.numeric(matrix(as.numeric(dl$jmat), nrow = nrow(tz), ncol = ncol(tz), byrow = TRUE))
+      ynum <- as.numeric(matrix(as.numeric(dl$y), nrow = nrow(tz), ncol = ncol(tz), byrow = TRUE))
+      z2 <- as.numeric(tz) * as.numeric(tp)
+      ppd <- dbinom(ynum, jnum, z2)
+      ppd <- matrix(ppd, nrow = nrow(tz), ncol = ncol(tz))
+      cpo_vec <- nrow(ppd)/apply(1/ppd, 2, sum, na.rm = TRUE)
+      tg <- which(is.na(as.numeric(dl$y)))
+      loss_score[i] <- -sum(log(cpo_vec[-tg]))
       mnm <- strsplit(models[i], "\\.")[[1]][1]
       write.table(mmat, paste0("./model_outputs/",species,"_", mnm,".txt" ), row.names = FALSE)
     }
