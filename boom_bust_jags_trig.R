@@ -56,7 +56,7 @@ model{
       logit(psi[k,t]) <- (z[k,t-1] * (py[t-1])) +
         (z[k,t-1] * p1 * cov[k]) +
         ((1-z[k,t-1]) * gy[t-1])+
-        ((1 - z[k,t-1]) * (a1_gam * cos((pi*2*a2_gam)/2) * C[t-1] + a1_gam * sin((pi*2*a2_gam)/2) * S[t-1]))+
+        ((1-z[k,t-1]) * (a1_gam * cos((pi*2*a2_gam)/2) * C[t-1] + a1_gam * sin((pi*2*a2_gam)/2) * S[t-1]))+
         ((1-z[k,t-1]) * g1 * cov[k])
         
         

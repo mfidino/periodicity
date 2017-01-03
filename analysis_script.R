@@ -10,11 +10,13 @@ source("periodicity_utility.R")
 
 # load the reshape package
 package_load(c("reshape2", "runjags", "rjags", "parallel"))
-
+load.module('glm')
 
 # lets do the coyote
-z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[1,,]
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[1,,-c(1:4)]
 
+# to_go
+nodat <- which(rowSums(is.na(z))==9)
 # get number of sites occupied
 
 
@@ -39,12 +41,13 @@ species_names <- read.table("species_used_in_fa10_sp13_analysis.txt", header = T
 site_names <- read.table("sites_used_in_sp10_sp13_analysis.txt", header = TRUE)
 
 covdat <- read.csv("urban_pc.csv", header = TRUE)
+#covdat <- covdat[-nodat,]
 # read in the y array
 
 y_array <- df_2_array(read.table("y_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))
 
-j_mat <- read.table("j_matrix_sp10_sp13.txt", header = TRUE, sep = "\t")
-j_mat[68,3:4] <- 26
+j_mat <- read.table("j_matrix_sp10_sp13.txt", header = TRUE, sep = "\t")[,-c(1:4)]
+#j_mat[68,3:4] <- 26
 
 
 
@@ -53,9 +56,9 @@ params <- c("lp", "ly", "g0", "p0", "gy", "py", "gy_sd",
             "py_sd", "ly_sd", "psinit")
 
 # coyote analysis
-cs <- make_c_s_mat(1:12, 4)
+cs <- make_c_s_mat(1:8, 4)
 
-data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,]), nyear = ncol(z), 
+data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Coyote"),,-c(1:4)]), nyear = ncol(z), 
                   nsite = nrow(z), 
                   spa = prior_for_occ$a, spb = prior_for_occ$b,
                   jmat = as.matrix(j_mat),
@@ -71,11 +74,11 @@ models <- c("ranef_year_jags.R",
 to_mon <- list(c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
                      "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
                      "ls_sd", "y_pred", "z", "p"),
-                   c("psinit", "ly", "ls", "g_mu", "p_mu",
+                   c("psinit", "ly","gy", "ls", "g_mu", "p_mu",
                      "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
                      "ls_sd", "y_pred", "theta", "dp", "z", "p"),
                    c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
-                     "lp", "g1", "p1", "l1", "ly_sd",
+                     "lp", "g1", "p1", "l1", "ly_sd","py_sd",
                      "ls_sd", "y_pred", "theta", "dp", "z","p" ),
                    c("psinit", "py", "ly", "ls", "g_mu", "p_mu",
                      "lp", "g1", "p1", "l1", "py_sd", "ly_sd",
@@ -84,17 +87,12 @@ species <- "coyote"
 inl <- list(inits_ranef, inits_pulse, 
             inits_only_pulse, inits_homog)
 
-# the model outputs will be saved
-coyote_scores <- fit_models(models, data_list_trig, inl, to_mon, "coyote")
+coyote_scores3 <- fit_models(models, data_list_trig, inl, to_mon, "coyote4")
+write.table(coyote_scores3, "./model_outputs/coyote_scores4.txt", row.names = FALSE, sep = "\t")
 
-coyote_scores <- data.frame(loss_scores = c(1346.364, 1334.906, 1338.537, 1345.094),
-                            species = "coyote",
-                            model = c("ranef_year_jags", "pulse_year_jags_trig",
-                                      "only_pulse_year_jags_trig", "homog_time"))
-write.table(coyote_scores, "./model_outputs/coyote_scores.txt", row.names = FALSE, sep = "\t")
 
 ### red fox
-z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[5,,]
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[5,,-c(1:4)]
 
 # get number of sites occupied
 
@@ -105,7 +103,7 @@ soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
 
 prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
 
-data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Redfox"),,]), nyear = ncol(z), 
+data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Redfox"),,-c(1:4)]), nyear = ncol(z), 
                        nsite = nrow(z), 
                        spa = prior_for_occ$a, spb = prior_for_occ$b,
                        jmat = as.matrix(j_mat),
@@ -113,11 +111,11 @@ data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Redfox"),,]
                        cov = covdat$pc1, P = 4)
 
 # the model outputs will be saved
-fox_scores <- fit_models(models, data_list_trig, inl, to_mon, "redfox")
-write.table(fox_scores, "./model_outputs/fox_scores.txt", row.names = FALSE, sep = "\t")
+fox_scores2 <- fit_models(models, data_list_trig, inl, to_mon, "redfox3")
+write.table(fox_scores2, "./model_outputs/fox_scores3.txt", row.names = FALSE, sep = "\t")
 # now striped skunk
 
-z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[6,,]
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[6,,-c(1:4)]
 
 # get number of sites occupied
 
@@ -128,7 +126,7 @@ soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
 
 prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
 
-data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Skunk"),,]), nyear = ncol(z), 
+data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Skunk"),,-c(1:4)]), nyear = ncol(z), 
                        nsite = nrow(z), 
                        spa = prior_for_occ$a, spb = prior_for_occ$b,
                        jmat = as.matrix(j_mat),
@@ -136,31 +134,31 @@ data_list_trig <- list(y = as.matrix(y_array[which(species_names$x=="Skunk"),,])
                        cov = covdat$pc1, P = 4)
 
 # the model outputs will be saved
-skunk_scores <- fit_models(models, data_list_trig, inl, to_mon, "skunk")
-write.table(skunk_scores, "./model_outputs/skunk_scores.txt", row.names = FALSE, sep = "\t")
+skunk_scores2 <- fit_models(models, data_list_trig, inl, to_mon, "skunk3")
+write.table(skunk_scores2, "./model_outputs/skunk_scores3.txt", row.names = FALSE, sep = "\t")
 #######################################################
 ###### Opossum
 #######################################################
 
-z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[3,,]
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[3,-nodat,-c(1:4)]
 
 # get number of sites occupied
 
 
-soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
+soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 95 - sum(is.na(x)))
 
 # get beta a and b from mean and standard deviation of soc
 
 prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
 
-cs <- make_c_s(1:12, 2)
+cs <- make_c_s(1:8, 2)
 
-data_list_boom <- list(y = as.matrix(y_array[which(species_names$x=="Opossum"),,]), nyear = ncol(z), 
+data_list_boom <- list(y = as.matrix(y_array[which(species_names$x=="Opossum"),-nodat,-c(1:4)]), nyear = ncol(z), 
                        nsite = nrow(z), 
                        spa = prior_for_occ$a, spb = prior_for_occ$b,
-                       jmat = as.matrix(j_mat),
+                       jmat = as.matrix(j_mat)[-nodat,],
                        pi = 3.14159, C = cs[[1]], S = cs[[2]],
-                       cov = covdat$pc1, P = 2)
+                       cov = covdat$pc1[-nodat], P = 2)
 
 
 models <- c("ranef_year_jags.R", 
@@ -170,39 +168,42 @@ models <- c("ranef_year_jags.R",
 
 to_mon <- list(c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
-                 "ls_sd", "y_pred", "z", "p"),
-               c("psinit", "ly", "ls", "g_mu", "p_mu",
+                 "ls_sd", "z", "p", "y_pred"),
+               c("psinit", "ly","gy", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "gy_sd", "py_sd", "ly_sd",
-                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z", "p"),
+                 "ls_sd", "a1_gam", "a2_gam", "z", "p", "y_pred"),
                c("psinit", "gy", "py", "ly", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "ly_sd",
-                 "ls_sd", "y_pred", "a1_gam", "a2_gam", "z", "p"),
+                 "ls_sd", "a1_gam", "a2_gam", "z", "p", "y_pred"),
                c("psinit", "py", "ly", "ls", "g_mu", "p_mu",
                  "lp", "g1", "p1", "l1", "py_sd", "ly_sd",
-                 "ls_sd", "y_pred","z", "p"))
-species <- "opossum"
+                 "ls_sd","z", "p", "y_pred"))
+species <- "opossum2"
 inl <- list(inits_ranef, inits_boom, inits_only_boom, inits_homog)
+opossum_score2 <- fit_models(models, data_list_boom, inl, to_mon, "opossum4")
+
+write.table(opossum_score2, "./model_outputs/opossum_scores4.txt", row.names = FALSE, sep = "\t")
 
 # the model outputs will be saved
-opossum_scores <- fit_models(models, data_list_boom, inl, to_mon, "opossum")
-write.table(opossum_scores, "./model_outputs/opossum_scores.txt", row.names = FALSE, sep = "\t")
-###############################
-#raccoon
+
+
 ##################################
 
-z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[4,,]
+z <- df_2_array(read.table("z_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[4,,-c(1:4)]
+soc <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 100 - sum(is.na(x)))
 prior_for_occ <- betaABfromMeanSD(mean(soc), sd(soc))
 
 
-data_list_boom <- list(y = as.matrix(y_array[which(species_names$x=="Raccoon"),,]), nyear = ncol(z), 
+data_list_boom <- list(y = as.matrix(y_array[which(species_names$x=="Raccoon"),,-c(1:4)]), nyear = ncol(z), 
                        nsite = nrow(z), 
                        spa = prior_for_occ$a, spb = prior_for_occ$b,
                        jmat = as.matrix(j_mat),
                        pi = 3.14159, C = cs[[1]], S = cs[[2]],
                        cov = covdat$pc1, P = 2)
 
-raccoon_scores <- fit_models(models, data_list_boom, inl, to_mon, "raccoon")
-write.table(raccoon_scores, "./model_outputs/raccoon_scores.txt", row.names = FALSE, sep = "\t")
+raccoon_scores3 <- fit_models(models, data_list_boom, inl, to_mon, "raccoon4")
+
+write.table(raccoon_scores3, "./model_outputs/raccoon_scores4.txt", row.names = FALSE, sep = "\t")
 all_scores <- rbind(coyote_scores, fox_scores, skunk_scores, opossum_scores,raccoon_scores)
 write.table(all_scores, "./model_outputs/all_scores.txt", row.names = FALSE, sep = "\t")
 # swtich things around to do the opossum and raccoon

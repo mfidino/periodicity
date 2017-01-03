@@ -43,8 +43,8 @@ model{
     z[k,1] ~ dbern(psinit)
     z_pred[k,1] ~ dbern(psinit)
     for(t in 2:nyear){
-      logit(psi[k,t]) <- (z[k,t-1] * (py[t-1]) + p1 * cov[k]) + 
-        ((1-z[k,t-1]) * (gy[t-1]) + g1 * cov[k])
+      logit(psi[k,t]) <- (z[k,t-1] * (py[t-1] + p1 * cov[k])) + 
+        ((1-z[k,t-1]) * (gy[t-1] + g1 * cov[k]))
       z[k,t] ~ dbern(psi[k,t])
       z_pred[k,t] ~ dbern(psi[k,t])
     }

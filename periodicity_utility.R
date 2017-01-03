@@ -39,11 +39,11 @@ inits_ranef <- function(chain){
       z = z,
       g_mu = runif(1, -3, 3),
       p_mu = runif(1, -3, 3),
-      py = runif(12, -3, 3),
-      gy = runif(12, -3, 3),
-      ly = runif(13, -3, 3),
+      py = runif(8, -3, 3),
+      gy = runif(8, -3, 3),
+      ly = runif(9, -3, 3),
       lp = runif(1, -3, 3),
-      ls = runif(100, -3, 3),
+      ls = runif(95, -3, 3),
       p1 = runif(1, -3, 3),
       g1 = runif(1, -3, 3),
       .RNG.name = switch(chain,
@@ -75,9 +75,9 @@ inits_homog <- function(chain){
     list( 
       z = z,
       g_mu = runif(1, -3, 3),
-      py = runif(12, -3, 3),
-      ly = runif(13, -3, 3),
-      ls = runif(100,-3,3),
+      py = runif(8, -3, 3),
+      ly = runif(9, -3, 3),
+      ls = runif(95,-3,3),
       lp = runif(1, -3, 3),
       p1 = runif(1, -3, 3),
       g1 = runif(1, -3, 3),
@@ -200,9 +200,9 @@ inits_pulse <- function(chain){
       z = z,
       g1 = runif(1, -3, 3),
       p1 = runif(1, -3, 3),
-      py = runif(12, -3, 3),
-      gy = runif(12, -3, 3),
-      ly = runif(13, -3, 3),
+      py = runif(8, -3, 3),
+      gy = runif(8, -3, 3),
+      ly = runif(9, -3, 3),
       ls = runif(100,-3,3),
       lp = runif(1, -3, 3),
       g_mu = runif(1, -3, 3),
@@ -240,10 +240,10 @@ inits_boom <- function(chain){
       z = z,
       g1 = runif(1, -3, 3),
       p1 = runif(1, -3, 3),
-      py = runif(12, -3, 3),
-      gy = runif(12, -3, 3),
-      ly = runif(13, -3, 3),
-      ls = runif(100,-3,3),
+      py = runif(8, -3, 3),
+      gy = runif(8, -3, 3),
+      ly = runif(9, -3, 3),
+      ls = runif(95,-3,3),
       lp = runif(1, -3, 3),
       g_mu = runif(1, -3, 3),
       p_mu = runif(1, -3, 3),
@@ -280,8 +280,8 @@ inits_only_pulse <- function(chain){
       z = z,
       g1 = runif(1, -3, 3),
       p1 = runif(1, -3, 3),
-      py = runif(12, -3, 3),
-      ly = runif(13, -3, 3),
+      py = runif(8, -3, 3),
+      ly = runif(9, -3, 3),
       lp = runif(1, -3, 3),
       ls = runif(100,-3,3),
       g_mu = runif(1, -3, 3),
@@ -318,10 +318,10 @@ inits_only_boom <- function(chain){
       z = z,
       g1 = runif(1, -3, 3),
       p1 = runif(1, -3, 3),
-      py = runif(12, -3, 3),
-      ly = runif(13, -3, 3),
+      py = runif(8, -3, 3),
+      ly = runif(9, -3, 3),
       lp = runif(1, -3, 3),
-      ls = runif(100,-3,3),
+      ls = runif(95,-3,3),
       g_mu = runif(1, -3, 3),
       p_mu = runif(1, -3, 3),
       a1_gam = runif(1, 0.01, 3),
@@ -363,10 +363,9 @@ make_c_s_mat <- function( ti = NULL, n = NULL){
 
 
 
-coyote_scores <- rbind(coyote_scores, c(c1, "coyote", "ranef_year.R"))
   pploss <- function(post = NULL, yobs = NULL){
     yobs <- as.numeric(yobs)
-    a1 <- abs(sweep(post, 2, yobs))
+    a1 <- sweep(post, 2, yobs)^2
     togo <- which(is.na(yobs))
     am <- apply(a1[,-togo], 2, mean)
     
@@ -380,7 +379,7 @@ coyote_scores <- rbind(coyote_scores, c(c1, "coyote", "ranef_year.R"))
   make_c_s <- function( ti = NULL, p = NULL){
     
     C <- cos((2 * pi * ti)/p)
-    S <- cos((2 * pi * ti)/p)
+    S <- sin((2 * pi * ti)/p)
     
     return(list(C=C, S=S))
   }
@@ -389,7 +388,7 @@ coyote_scores <- rbind(coyote_scores, c(c1, "coyote", "ranef_year.R"))
   fit_models <- function(models = NULL, dl = NULL,
                          inl = NULL, to_monitor = NULL, species = NULL){
     
-    loss_score <- rep(0, length(models))
+    loss_score <- loss_score2 <- rep(0, length(models))
     for(i in 1:length(models)){
       
       mout <- run.jags( model= models[i] , 
@@ -399,8 +398,8 @@ coyote_scores <- rbind(coyote_scores, c(c1, "coyote", "ranef_year.R"))
                         n.chains=detectCores()-1 ,
                         adapt=3000,
                         burnin=3000 , 
-                        sample=ceiling(20000/7) ,
-                        thin=5 ,
+                        sample=ceiling(10000/(detectCores()-1)) ,
+                        thin=5,
                         summarise=FALSE ,
                         plots=FALSE,
                         method = "parallel")
@@ -415,9 +414,36 @@ coyote_scores <- rbind(coyote_scores, c(c1, "coyote", "ranef_year.R"))
       cpo_vec <- nrow(ppd)/apply(1/ppd, 2, sum, na.rm = TRUE)
       tg <- which(is.na(as.numeric(dl$y)))
       loss_score[i] <- -sum(log(cpo_vec[-tg]))
+      loss_score2[i] <- pploss(mmat[,grep("y_pred", colnames(mmat))], dl$y)
       mnm <- strsplit(models[i], "\\.")[[1]][1]
-      write.table(mmat, paste0("./model_outputs/",species,"_", mnm,".txt" ), row.names = FALSE)
+      write.table(mmat, paste0("./model_outputs/",species,"_", mnm,".txt" ), row.names = FALSE,
+                  sep = "\t")
+      rm(mmat)
     }
-    return(data.frame(loss_score, species = rep(species, length(models)),
+    return(data.frame(CPO = loss_score, pploss = loss_score2, species = rep(species, length(models)),
                       model = models))
+  }
+  
+  
+  plsg <- function(theta = NULL, delta = NULL, p = NULL, t = NULL, a0 = NULL){
+    
+    n <- 1:3  
+    a1 <- (theta/(1*pi))*sin((pi*1)/p)*cos((2 *pi*1 * (t - delta))/(p))
+    a2 <- (theta/(2*pi))*sin((pi*2)/p)*cos((2 *pi*2 * (t - delta))/(p))
+    a3 <- (theta/(3*pi))*sin((pi*3)/p)*cos((2 *pi*3 * (t - delta))/(p))
+    a4 <- (theta/(4*pi))*sin((pi*4)/p)*cos((2 *pi*4 * (t - delta))/(p))
+    a5 <- (theta/(5*pi))*sin((pi*5)/p)*cos((2 *pi*5 * (t - delta))/(p))
+    a6 <- (theta/(6*pi))*sin((pi*6)/p)*cos((2 *pi*6 * (t - delta))/(p))
+    a7 <- (theta/(7*pi))*sin((pi*7)/p)*cos((2 *pi*7 * (t - delta))/(p))
+    a8 <- (theta/(8*pi))*sin((pi*8)/p)*cos((2 *pi*8 * (t - delta))/(p))
+    a9 <- (theta/(9*pi))*sin((pi*9)/p)*cos((2 *pi*9 * (t - delta))/(p))
+    a10 <- (theta/(10*pi))*sin((pi*10)/p)*cos((2 *pi*10 * (t - delta))/(p))
+    a11 <- (theta/(11*pi))*sin((pi*11)/p)*cos((2 *pi*11 * (t - delta))/(p))
+    
+    ans <- a0 + a1 +a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 
+    return(ans)
+  }
+  
+  p2 <- function(a0, a1, a2, ti, p){
+    a0 + a1*cos(((2*pi)/p)* (ti - a2))
   }

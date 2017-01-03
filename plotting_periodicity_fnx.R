@@ -73,6 +73,11 @@ plsg <- function(theta = NULL, delta = NULL, p = NULL, t = NULL, a0 = NULL){
 p2 <- function(a0, a1, a2, ti, p){
   a0 + a1*cos(((2*pi)/p)* (ti - a2))
 }
+p2ranef <- function(gs, a1, a2, ti, p){
+  p2m <- rep(0, length(ti))
+
+  return(p2m)
+} 
 
 
 # doing opossum
