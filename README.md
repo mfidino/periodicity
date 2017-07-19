@@ -8,6 +8,8 @@ It can be used to estimate periodic signals within the linear predictor of a dyn
 
 All of the files in Data S1 must be within your working directory for the analysis to work.  Furthermore, the analyses have been set up to be done in parallel and uses all but two of the cores in a computer. Therefore, if you have two or less cores on your computer you will need to adjust any function in Fidino_2017_utility_functions.R that uses the detectCores function. This includes zest_posterior, make_pred_PTM_pulse, make_pred_PTM_boom and fit_models. Furthermore the n.chains arguments in Fidino_2017_total_variabiltity.R associated to the run.jags functions would need to be changed.
 
+Once all of the files have been copied, the models can be fit through Fidino_2017_analysis_script.R
+
 # Analysis scripts
 
 There are 4 scripts used for analysis and model summary.
