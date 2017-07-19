@@ -75,4 +75,16 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+*
+
 model_outputs/
+
+!.gitignore
+!Fidino_2017*
+
+*summary*
+*cpo*
+*ppd*
+*post*
+*.tiff
+*when*
