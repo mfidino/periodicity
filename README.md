@@ -2,7 +2,7 @@
 
 This is model code from:
 
-Fidino, M., and S. B. Magle. (in press) Using Fourier series to predict periodic patterns in dynamic occupancy models. Ecosphere
+Fidino, M., and S. B. Magle. (in press). Using Fourier series to predict periodic patterns in dynamic occupancy models. Ecosphere
 
 It can be used to estimate periodic signals within the linear predictor of a dynamic occupancy model. 
 
