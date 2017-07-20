@@ -45,7 +45,7 @@ load.module('glm')
 #
 # COYOTE ANALYSIS, reading in just the first species
 #
-z <- df_2_array(read.table("Fidino_2017_community_incidence_matrix_sp10_sp13.txt", header = TRUE, sep = "\t"))[1,,]
+z <- df_2_array(read.table("Fidino_2017_community_incidence_matrix_sp11_sp13.txt", header = TRUE, sep = "\t"))[1,,]
 
 # proportion of sites occupied each time step
 prop_sites_occupied <- colSums(z, na.rm = TRUE) / apply(z, 2, function(x) 95 - sum(is.na(x)))
@@ -57,10 +57,10 @@ covdat <- read.table("Fidino_2017_URB_covariate.txt", header = TRUE, sep ="\t")
 
 # read in the y array (days a species was seen per site and season)
 # ordered identically to community incidence matrix z
-y_array <- df_2_array(read.table("Fidino_2017_chicago_detection_data_sp10_sp13.txt", header = TRUE, sep = "\t"))
+y_array <- df_2_array(read.table("Fidino_2017_chicago_detection_data_sp11_sp13.txt", header = TRUE, sep = "\t"))
 
 # read in number of days a camera was active per site and season
-j_mat <- read.table("Fidino_2017_Chicago_days_camera_active_sp10_sp13.txt", header = TRUE, sep = "\t")
+j_mat <- read.table("Fidino_2017_Chicago_days_camera_active_sp11_sp13.txt", header = TRUE, sep = "\t")
 
 # make temporally varying covariates for Fourier analysis
 cs <- make_c_s_mat(1:8, 4)
@@ -150,7 +150,7 @@ rm(coyote_out)
 # RED FOX ANALYSIS, reading in the second species
 #
 z <- df_2_array(read.table(
-  "Fidino_2017_community_incidence_matrix_sp10_sp13.txt", 
+  "Fidino_2017_community_incidence_matrix_sp11_sp13.txt", 
   header = TRUE, sep = "\t"))[2,,]
 
 prop_sites_occupied <- colSums(z, na.rm = TRUE) / 
@@ -190,7 +190,7 @@ rm(fox_out)
 #
 
 z <- df_2_array(read.table(
-  "Fidino_2017_community_incidence_matrix_sp10_sp13.txt", 
+  "Fidino_2017_community_incidence_matrix_sp11_sp13.txt", 
   header = TRUE, sep = "\t"))[3,,]
 
 prop_sites_occupied <- colSums(z, na.rm = TRUE) / 
@@ -230,7 +230,7 @@ rm(skunk_out)
 #
 
 z <- df_2_array(read.table(
-  "Fidino_2017_community_incidence_matrix_sp10_sp13.txt", 
+  "Fidino_2017_community_incidence_matrix_sp11_sp13.txt", 
   header = TRUE, sep = "\t"))[4,,]
 
 prop_sites_occupied <- colSums(z, na.rm = TRUE) / 
@@ -276,7 +276,7 @@ rm(raccoon_out)
 #
 
 z <- df_2_array(read.table(
-  "Fidino_2017_community_incidence_matrix_sp10_sp13.txt", 
+  "Fidino_2017_community_incidence_matrix_sp11_sp13.txt", 
   header = TRUE, sep = "\t"))[5,,]
 
 prop_sites_occupied <- colSums(z, na.rm = TRUE) / 
