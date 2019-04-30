@@ -16,7 +16,7 @@ There are 4 scripts used for analysis and model summary.
 
 - **Fidino_2017_utility_functions.R:** This script contains utility functions to fit homogeneous time, stochastic time, and periodic time dynamics occupancy models. This script needs to be sourced before using any of the other scripts. Functions in this file are explained within the script itself. 
 - **Fidino_2017_analysis_script.R:** This script uses the functions in Fidino_2017_periodic_utility_functions.R to fit periodic time, stochastic time, and homogeneous time dynamic occupancy models to the 9 seasons of Chicago camera trap data for coyote, red fox, striped skunk, raccoon, and Virginia opossum data.
-- **Fidino_2017_model_summary_and_plotting.R:** Uses the saved model outputs from the analysis script and the functions in Fidino_2017_utility_functions.R to calculate summary statistics for plotting (i.e., this script summarizes the MCMC outputs to generate Figure 1 in the manuscript).
+- **Fidino_2017_summarize_and_plot.R:** Uses the saved model outputs from the analysis script and the functions in Fidino_2017_utility_functions.R to calculate summary statistics for plotting (i.e., this script summarizes the MCMC outputs to generate Figure 1 in the manuscript).
 - **Fidino_2017_total_temporal_variability.R:** This script uses the functions in Fidino_2017_periodic_utility_functions.R to fit a periodic time model to each species that also includes a random temporal component. The primary variable of interest from these models is the standard deviation associated to the random temporal component, as it can be compared to the standard deviation from a model that only contains a random temporal component (i.e., no periodic element).
 
 # Models
